@@ -1,24 +1,36 @@
-define USAGE
-Super awesome hand-crafted build system ⚙️
+CURRENT_DIR := $(shell pwd)
 
-Commands:
-	init      Install Python dependencies with pipenv
-	test      Run linters, test db migrations and tests.
-	serve     Run app in dev environment.
-endef
+ifndef NAME
+  NAME = Flaskproject
+endif
 
-export USAGE
+VIRTUALENV_DIR = ${NAME}/.env
+INTERPRETER = $(CURRENT_DIR)/$(VIRTUALENV_DIR)/bin/
+PATH := ${PATH}:$(INTERPRETER)
+
 help:
-	@echo "$$USAGE"
+	@echo "Usage: $ make <target> [NAME=Flaskproject]"
+	@echo " > create    : create flask project ${NAME}"
+	@echo " > destroy   : destroy flask project ${NAME}"
+	@echo " > deps      : install dependentcies via pip"
 
-init:
-	pip3 install pipenv
-	pipenv install --dev --skip-lock
+create:
+	@echo "[RUN]: create flask project"
+	@mkdir -p $(CURRENT_DIR)/${NAME}/app/{templates,static/{images,css,js,public},controllers}
+	echo "Flask==0.11.1\nFlask-SQLAlchemy==2.1\nFlask-Script==2.0.5\nFlask-Assets==0.12\nFlask-Cache==0.13.1\nFlask-DebugToolbar==0.10.0\ncssmin==0.2.0\njsmin==2.2.1" \
+	> $(CURRENT_DIR)/${NAME}/requirements.txt
+	make env
 
-test:
-	pipenv run yapf -irp flask-example tests
-	pipenv run flake8 --max-line-length=120 flask-example tests
-	pipenv run pytest --junitxml=pytest.xml --cov-config .coveragerc --cov flask-example --cov-report term
+destroy:
+	@echo "[RUN]: destroy flask project"
+	@rm -fr $(CURRENT_DIR)/${NAME}
 
-serve:
-	FLASK_APP=main.py pipenv run flask run
+env:
+	@echo "[RUN]: create/activate virtualenv"
+	@virtualenv $(VIRTUALENV_DIR) && \
+	. $(VIRTUALENV_DIR)/bin/activate && \
+	make deps
+
+deps:
+	@echo "[RUN]: install dependentcies"
+	$(VIRTUALENV_DIR)/bin/pip install -r $(CURRENT_DIR)/${NAME}/requirements.txt
